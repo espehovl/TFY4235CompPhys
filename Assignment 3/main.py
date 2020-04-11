@@ -7,7 +7,7 @@ Created on Mon Mar 30 17:19:19 2020
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import signal as sig
+
 
 from utilities import readEigenData, normalized_function, findAlphas, innerProduct, animateFunction
 
@@ -40,8 +40,8 @@ for n in range(min(numGraphs,len(vals))):
 	analyticalSquared.append([i**2 for i in analyticalFunctions[n]])
 	numericalSquared.append([i**2 for i in numericalNormalized[n]]) 	
 	errorsOfSquaredFuncs.append([analyticalSquared[n][i]-numericalSquared[n][i] for i in range(len(analyticalSquared[n]))])
-
-potential_norm = [i*max(numericalSquared[0]) for i in potential]
+"""
+potential_norm = [int(bool(v0))*i*max(numericalSquared[0]) for i in potential]
 fig, (ax1) = plt.subplots(1,figsize = (6,4))
 for ax in fig.get_axes():
     ax.label_outer()
@@ -51,12 +51,12 @@ ax1.fill_between(disc,potential_norm, color = "k", alpha = 0.5)
 for i in range(min(numGraphs,len(vals))):
 	ax1.plot(disc,numericalSquared[i], label = r"$\psi_{{{}}}$".format(i+1))
 
-ax1.set_title("Numerical solution, normalized")
+ax1.set_title(r"Numerical solution, normalized, $\nu_0 = $"+f"{v0}")
 ax1.set_xlabel("x/L")
 ax1.set_ylabel(r"$|\psi(x')|^2$")
 ax1.legend()
 
-"""
+
 		
 #Plot analytical functions
 for i in range(min(numGraphs,len(vals))):
@@ -71,9 +71,9 @@ for i in range(min(numGraphs,len(vals))):
 	ax3.plot(disc,errorsOfSquaredFuncs[i], label = r"$\epsilon_{{{}}}$".format(i+1))
 ax3.set_ylabel("Error")
 ax3.set_xlabel("x/L")
-ax3.legend()"""
+ax3.legend()
 plt.show()
-
+"""
 ### Plot difference (ratio) between analytical and numerical solution
 #fig = plt.figure(figsize=(6,4))
 #for i in range(min(numGraphs, len(vals))):
@@ -194,25 +194,65 @@ ax3.set_ylabel("x'")
 plt.show() 
 
 #%% Animate the tunneling (mostly for fun)
-'''
-plt.ioff()
-animateFunction(squareds, disc, potential)
-'''
+
+#plt.ioff()
+#animateFunction(squareds, disc, potential)
+
 
 
 #%% Task 3.4
+
 
 def f(_lambda):
 	k = np.sqrt(_lambda)
 	kappa = np.sqrt(v0-_lambda)
 	return np.exp(kappa/3)*np.square(kappa*np.sin(k/3)+k*np.cos(k/3)) - np.exp(-kappa/3)*np.square(kappa*np.sin(k/3)+k*np.cos(k/3))
 
-lambdaSpace = np.linspace(0,v0,v0*10+1)
-fVals = [f(L) for L in lambdaSpace]
-plt.plot(lambdaSpace,fVals)
+def df(_lambda): #This looks horrible, but it is correct! (or so it seems!)
+	k = np.sqrt(_lambda)
+	kappa = np.sqrt(v0-_lambda)
+	
+	return (-1)/6*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))**2 * np.exp(1/3*kappa)/kappa - 1/6*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))**2 * np.exp((-1)/3*kappa)/kappa + 2*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))*((-1)/2*np.sin(1/3*k)/kappa+1/2*np.cos(1/3*k)/k+1/6*kappa*np.cos(1/3*k)/k-1/6*np.sin(1/3*k))*np.exp(1/3*kappa)-2*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))*((-1)/2 *np.sin(1/3*k)/kappa+1/2*np.cos(1/3*k)/k+1/6*kappa*np.cos(1/3*k)/k-1/6*np.sin(1/3*k))*np.exp((-1)/3*kappa)
 
-plt.hlines(0, 0, v0)
+def findRoots(guesses, tolerance = 1e-2):
+	"""
+	guesses: a list of guesses of the roots we are looking into finding
+	tolerance: a tolerance of how precise we want the roots
+	"""
+	roots = []
+	iterations = [] #Mostly for debugging
+	
+	#Newton's method. Pretty basic, but works for finding separated roots. 
+	#Not sure if I will spend more time on this
+	for g in guesses: #For all guesses...
+		if g > v0: #We are outside the scope of interest
+			break
+		xOld = g #Initial guess
+		counter = 0
+		while True: #Perform iterations
+			counter += 1
+			xNew = xOld - f(xOld)/df(xOld)
+			if abs(xNew - xOld) < tolerance: #Solution is satisfactory
+				break
+			xOld = xNew
+		iterations.append(counter)
+		roots.append(xNew)
+	print(roots, iterations, sep="\n")
+	return roots
+
+
+lambdaSpace = np.linspace(0,int(v0),int(v0*10)+1)
+fVals = [f(L) for L in lambdaSpace]
+dfVals = [df(L) for L in lambdaSpace]
+fig = plt.figure(figsize=(6,4))
+plt.plot(lambdaSpace,fVals)
+plt.plot(lambdaSpace,dfVals)
+
+plt.vlines(findRoots(vals), 0, max(fVals), linestyle = "dashed")
+plt.hlines(0,0,v0)
 
 plt.ylabel(r"$f(\lambda)$")
 plt.xlabel(r"$\lambda$")
 plt.show()
+
+

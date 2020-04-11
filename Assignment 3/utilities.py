@@ -103,3 +103,5 @@ def animateFunction(dataArray, x_space, potentialProfile, filename = "results/An
 		frames[0].save(filename+'.gif', format='GIF', append_images=frames[1:], save_all=True, duration=100, loop=1)
 
 	print("GIF conversion complete!")
+	
+	

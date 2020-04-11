@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include "armadillo"
 #include "utilities.h"
@@ -27,13 +28,19 @@ void hamiltonianWithBarrier() {
 	
 	const double v0 = 1000;
 
+	
+	cout << "Setting up " << disc << "x" << disc << " matrix...";
 	arma::mat m = setUpWithBarrier(disc, discretization, deltaX, v0);
+	cout << " matrix setup complete!" << endl;
 	//m.print();
-
+	cout << "Solving for eigenvalues and eigenvectors..." << endl;
+	auto start = chrono::high_resolution_clock::now();
 	//Solve the problem for eigenvalues and -vectors
 	arma::vec eigenvalues;
 	arma::mat eigenvectors;
 	arma::eig_sym(eigenvalues, eigenvectors, m);
+	auto stop = chrono::high_resolution_clock::now();
+	cout << "System solved in " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms." << endl;
 
 	//eigenvectors.print("Eigenvectors");
 	//potentialProfile(discretization);
