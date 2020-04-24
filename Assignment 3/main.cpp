@@ -8,12 +8,14 @@ using namespace std;
 
 void createAndFindEigensnacks();
 void hamiltonianWithBarrier();
+
 int main() {
 	
 	//createAndFindEigensnacks();
 
 	hamiltonianWithBarrier();
 	
+	//Automagically run the python script for plotting (32-bit only, also does not work with creating GIFs)
 	system(std::string{ "python main.py" }.c_str());
 	cout << "Program finished, enter any character... ";
 	cin.get();
@@ -26,7 +28,7 @@ void hamiltonianWithBarrier() {
 	const double deltaX = 1.0 / (double)(disc - 1);
 	const arma::vec discretization = arma::linspace(0, 1, disc);
 	
-	const double v0 = 1000;
+	const double v0 = 0; //Potential barrier height
 
 	
 	cout << "Setting up " << disc << "x" << disc << " matrix...";
@@ -46,6 +48,14 @@ void hamiltonianWithBarrier() {
 	//potentialProfile(discretization);
 
 	saveEigenData(eigenvalues, eigenvectors, discretization, v0);
+
+	//Task 3.7
+	if (true) {
+		arma::vec Psi_0 = eigenvectors.col(0); //Initial condition
+		arma::vec PSI; //The result, to be used later on
+
+	}
+
 }
 
 //Simply for bundling this stuff together

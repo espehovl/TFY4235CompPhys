@@ -8,14 +8,15 @@ Created on Mon Mar 30 17:19:19 2020
 import matplotlib.pyplot as plt
 import numpy as np
 
-
+plt.rcParams.update({'font.size': 16})
+plt.rcParams.update({'figure.autolayout': True})
 from utilities import readEigenData, normalized_function, findAlphas, innerProduct, animateFunction
 
 
-disc,vals,vecs,potential, v0 = readEigenData("eigenData.tsv") #Discretization, eigenvalues, eigenvectors, potential profile
+disc,vals,vecs,potential, v0 = readEigenData("results/eigenDataBarrier3000.tsv") #Discretization, eigenvalues, eigenvectors, potential profile
 
 #%%
-numGraphs = 5 #How many eigenfunctions to show in one plot?
+numGraphs = 3 #How many eigenfunctions to show in one plot?
 
 #Exact solution, properly normalized
 analyticSol = lambda n,x: np.sqrt(2)*np.sin(np.pi*n*x)
@@ -40,24 +41,27 @@ for n in range(min(numGraphs,len(vals))):
 	analyticalSquared.append([i**2 for i in analyticalFunctions[n]])
 	numericalSquared.append([i**2 for i in numericalNormalized[n]]) 	
 	errorsOfSquaredFuncs.append([analyticalSquared[n][i]-numericalSquared[n][i] for i in range(len(analyticalSquared[n]))])
-"""
+
 potential_norm = [int(bool(v0))*i*max(numericalSquared[0]) for i in potential]
 fig, (ax1) = plt.subplots(1,figsize = (6,4))
+
+plt.tight_layout()
 for ax in fig.get_axes():
     ax.label_outer()
 #Plot numerical functions
 #ax1.plot(disc,potential_norm,  color = "k")
 ax1.fill_between(disc,potential_norm, color = "k", alpha = 0.5)
 for i in range(min(numGraphs,len(vals))):
-	ax1.plot(disc,numericalSquared[i], label = r"$\psi_{{{}}}$".format(i+1))
+	ax1.plot(disc,numericalNormalized[i], label = r"$\psi_{{{}}}$".format(i+1))
 
-ax1.set_title(r"Numerical solution, normalized, $\nu_0 = $"+f"{v0}")
+#ax1.set_title(r"Numerical solution, normalized, $\nu_0 = $"+f"{v0}")
 ax1.set_xlabel("x/L")
 ax1.set_ylabel(r"$|\psi(x')|^2$")
 ax1.legend()
 
-
-		
+fig.savefig("plot.png")
+plt.show()
+"""	
 #Plot analytical functions
 for i in range(min(numGraphs,len(vals))):
 	ax2.plot(disc,analyticalSquared[i], label = r"$\psi_{{{}}}$".format(i+1))
@@ -122,7 +126,7 @@ print(innerProduct(numericalNormalized[1],numericalNormalized[1],disc))
 #%%
 
 ##2.10 check initial condition
-
+plt.rcParams.update({'font.size': 14})
 #The real deal function, returns the time evolution of the entire system
 def Psi(t_values, alphaN, lambdaN, psiN, initialPsi):
 	"""
@@ -164,7 +168,7 @@ basicTest = Psi(np.multiply(t,np.pi/(vals[1]-vals[0])), alpha_0, lambda_0, eigen
 
 ## Plot the behemoth - plot the superposition of wavefunctions as time progresses
 
-fig, (ax1,ax2,ax3) = plt.subplots(3,1, figsize = (10,6))
+fig, (ax1,ax2,ax3) = plt.subplots(3,1, figsize = (12,7))
 for ax in fig.get_axes():
     ax.label_outer()
 
@@ -206,7 +210,7 @@ plt.show()
 def f(_lambda):
 	k = np.sqrt(_lambda)
 	kappa = np.sqrt(v0-_lambda)
-	return np.exp(kappa/3)*np.square(kappa*np.sin(k/3)+k*np.cos(k/3)) - np.exp(-kappa/3)*np.square(kappa*np.sin(k/3)+k*np.cos(k/3))
+	return np.exp(kappa/3)*np.square(kappa*np.sin(k/3)+k*np.cos(k/3)) - np.exp(-kappa/3)*np.square(kappa*np.sin(k/3)-k*np.cos(k/3))
 
 def df(_lambda): #This looks horrible, but it is correct! (or so it seems!)
 	k = np.sqrt(_lambda)
@@ -214,7 +218,7 @@ def df(_lambda): #This looks horrible, but it is correct! (or so it seems!)
 	
 	return (-1)/6*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))**2 * np.exp(1/3*kappa)/kappa - 1/6*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))**2 * np.exp((-1)/3*kappa)/kappa + 2*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))*((-1)/2*np.sin(1/3*k)/kappa+1/2*np.cos(1/3*k)/k+1/6*kappa*np.cos(1/3*k)/k-1/6*np.sin(1/3*k))*np.exp(1/3*kappa)-2*(k*np.cos(1/3*k)+kappa*np.sin(1/3*k))*((-1)/2 *np.sin(1/3*k)/kappa+1/2*np.cos(1/3*k)/k+1/6*kappa*np.cos(1/3*k)/k-1/6*np.sin(1/3*k))*np.exp((-1)/3*kappa)
 
-def findRoots(guesses, tolerance = 1e-2):
+def findRoots(guesses, tolerance = 1e-5):
 	"""
 	guesses: a list of guesses of the roots we are looking into finding
 	tolerance: a tolerance of how precise we want the roots
@@ -240,6 +244,22 @@ def findRoots(guesses, tolerance = 1e-2):
 	print(roots, iterations, sep="\n")
 	return roots
 
+def bruteRoots(guess):
+	#Brute force - iterate through function values, find where the sign changes.
+	#Assumes/requires very fine discretization!
+	roots = []
+	dX = 1 #Delta, to avoid searching too large areas
+	
+	for g in guess: #For each guess...
+		if g > v0: 
+			break #We are outside the interesting area
+		xSpace = np.linspace(g-dX, g+dX, 101) #Create a fine discretization xspace around the guess
+		fSpace = [f(i) for i in xSpace] #Find the values...
+		for i in range(len(fSpace)-1):
+			if fSpace[i]*fSpace[i+1] < 0:
+				roots.append(xSpace[i])
+	print(roots)
+	return roots
 
 lambdaSpace = np.linspace(0,int(v0),int(v0*10)+1)
 fVals = [f(L) for L in lambdaSpace]
@@ -248,11 +268,12 @@ fig = plt.figure(figsize=(6,4))
 plt.plot(lambdaSpace,fVals)
 plt.plot(lambdaSpace,dfVals)
 
-plt.vlines(findRoots(vals), 0, max(fVals), linestyle = "dashed")
+plt.vlines(bruteRoots(vals), 0, max(fVals), linestyle = "dashed")
 plt.hlines(0,0,v0)
 
 plt.ylabel(r"$f(\lambda)$")
 plt.xlabel(r"$\lambda$")
 plt.show()
+
 
 
