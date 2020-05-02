@@ -6,7 +6,6 @@ Created on Mon Mar 30 17:04:20 2020
 """
 
 from scipy.integrate import simps
-from scipy import sqrt
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,13 +19,13 @@ def readEigenData(filename):
 	eigenVals = []
 	eigenVecs = []
 	potential = []
-	v0 = 0
+	v0 = 0 # Default value for potential barrier height, if none given in file
 	file = open(filename,"r")
 	
 	counter = 0
 	for line in file.readlines():
 		counter +=1
-		if line[0][0]=="#": 
+		if line[0][0]=="#": #Do nothing with the first line
 			None
 		elif counter == 2: #Fetch x_space
 			discretization = [float(elem) for elem in line.split()]
@@ -41,21 +40,18 @@ def readEigenData(filename):
 	file.close()
 	return discretization, eigenVals, eigenVecs, potential, v0
 
-def average(_list):
-	return sum(_list)/len(_list)
-
 def normalized_function(x_values, y_values):
 	integral = simps([np.square(np.abs(i)) for i in y_values],x_values)
-	print("integral(absolute value) = ",np.abs(integral))
+	#print("integral(absolute value) = ",np.abs(integral))
 	return [i/np.sqrt(integral) for i in y_values]
 
 def normalizationFactor(x_values,y_values):
 	integral = simps([np.square(np.abs(i)) for i in y_values],x_values)
-	print("integral(absolute value) = ",np.abs(integral))
+	#print("integral(absolute value) = ",np.abs(integral))
 	return 1/np.sqrt(integral)
 
 ##Find the alphas as according to task 2.8 and eqn. 2.14
-##Eigenvectors are normalized
+##Eigenvectors must be normalized
 def findAlphas(eigenvectors, x_values):
 	alphas = []
 	for i in range(len(eigenvectors)):
@@ -64,13 +60,12 @@ def findAlphas(eigenvectors, x_values):
 		alphas.append(simps(integrand, x_values))
 	return alphas
 
-def computeAlphaN(psiConjugate, Psi_0, x_values):
-	return simps(np.multiply(psiConjugate, Psi_0),x_values)
 
+#Compute the dot product of two functions
 def innerProduct(vec1, vec2, x_values):
 	return simps(np.multiply(vec1,vec2), x_values)
 
-
+#Create .gif animation
 def animateFunction(dataArray, x_space, potentialProfile, filename = "results/Animation/ani"):
 	"""
 	dataArray: a 2D-array of wavefunction superpositions as rows at different times, evolving over time
@@ -99,7 +94,7 @@ def animateFunction(dataArray, x_space, potentialProfile, filename = "results/An
 	for i in imgs:
 		new_frame = Image.open(i)
 		frames.append(new_frame)
-		# Save into a GIF file that loops 	forever
+		# Save into a GIF file that loops forever
 		frames[0].save(filename+'.gif', format='GIF', append_images=frames[1:], save_all=True, duration=100, loop=1)
 
 	print("GIF conversion complete!")

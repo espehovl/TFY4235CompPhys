@@ -1,8 +1,5 @@
 #pragma once
 
-//Initialize a finite difference matrix of second order
-arma::mat initCentralDiff2(int discretization, double dX);
-
 //Initialize finite difference matrix of problem with barrier
 arma::mat setUpWithBarrier(int discretization, arma::vec x_space, double dX, double v0);
 
@@ -15,3 +12,5 @@ arma::vec potentialProfile(arma::vec x_space);
 //dX corrects for the discretization spacing, such that the eigenvalues are "correct"
 void saveEigenData(const arma::vec& vals, const arma::mat& vecs, const arma::vec& discretization, double v0, int howMany = 0, std::string filename = "eigenData.tsv");
 
+//Run multiple discretizations in order to compare the error between numerical an analytical solutions
+void compareDiscretizations();

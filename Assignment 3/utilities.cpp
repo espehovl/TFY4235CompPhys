@@ -1,23 +1,10 @@
-
 #include "armadillo"
 #include "utilities.h"
-#include <assert.h>
+#include <fstream>
 
 using std::pow;
 
-arma::mat initCentralDiff2(int discretization, double dX){
-	//Set up matrix
-	arma::mat m(discretization, discretization);
-	m.fill(0.0);
-
-	//Fill diagonals (negative of a "normal" 2nd order central diff scheme)
-	m.diag(0).fill(2.0 / pow(dX, 2));
-	m.diag(-1).fill(-1.0 / pow(dX, 2)); //Values are divided by dX^2 here
-	m.diag(1).fill(-1.0 / pow(dX, 2));
-
-	return m; //We are done
-}
-
+//Initialize finite difference matrix of problem with barrier
 arma::mat setUpWithBarrier(int discretization, arma::vec x_space, double dX, double v0){
 	//Set up matrix
 	arma::mat m(discretization, discretization);
@@ -34,6 +21,7 @@ arma::mat setUpWithBarrier(int discretization, arma::vec x_space, double dX, dou
 	return m; //We are done
 }
 
+//Returns the prefactor of the potential (i.e. 1 if we are in the barrier, 0 if we are outside)
 double v(double x_prime) {
 	if (1.0 / 3.0 <= x_prime && x_prime < 2.0 / 3.0) {
 		return 1.0;
@@ -41,6 +29,7 @@ double v(double x_prime) {
 	else return 0.0;
 }
 
+//For plotting the potential over the graphs later on
 arma::vec potentialProfile(arma::vec x_space){
 	arma::vec profile(x_space.n_rows);
 	for (int i = 0; i < x_space.n_rows; i++) {
@@ -49,6 +38,7 @@ arma::vec potentialProfile(arma::vec x_space){
 	return profile;
 }
 
+// Save eigenvectors and values to file, for plotting purposes
 void saveEigenData(const arma::vec & vals, const arma::mat & vecs, const arma::vec& discretization, double v0, int howMany, std::string filename){
 	if (howMany == 0) howMany = (int) vals.n_rows; //Save all eigenvalues and vectors
 
@@ -82,6 +72,44 @@ void saveEigenData(const arma::vec & vals, const arma::mat & vecs, const arma::v
 	std::cout << "Saving eigenvalues in separate file..." << std::endl;
 	vals.save("eigenvalues.txt", arma::raw_ascii);
 	ofs.close();
+
+}
+//For studying the error for different discretizations
+void compareDiscretizations(){
+
+	using namespace std;
+	string dir{"results/vectors/"};
+	for (int i = 10; i < 10000; i += 100) {
+		const int disc = i;
+		const double deltaX = 1.0 / (double)(disc - 1);
+		const arma::vec discretization = arma::linspace(0, 1, disc);
+		cout << "Setting up " << disc << "x" << disc << " matrix...";
+		arma::mat m = setUpWithBarrier(disc, discretization, deltaX, 0);
+		cout << " matrix setup complete!" << endl;
+
+		ofstream ofs{ dir + "vector" + to_string(i) + ".tsv",std::ios::out | std::ios::trunc };
+		for (auto x : discretization) { //Write the x-space to file
+			ofs << x << "\t";
+		}
+		ofs << endl;
+
+		cout << "Solving for eigenvalues and eigenvectors..." << endl;
+		auto start = chrono::high_resolution_clock::now();
+		//Solve the problem for eigenvalues and -vectors
+		arma::vec eigenvalues;
+		arma::mat eigenvectors;
+		arma::eig_sym(eigenvalues, eigenvectors, m);
+		auto stop = chrono::high_resolution_clock::now();
+		cout << "System solved in " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms." << endl;
+
+		for (int col = 0; col < 10; col++) { //For 10 eigenvectors...
+			for (int row = 0; row < eigenvectors.n_rows; row++) { //For each element in the vector...
+				ofs << eigenvectors(row, col) << "\t";
+			}
+			ofs << endl;
+		}
+
+	}
 
 }
 
