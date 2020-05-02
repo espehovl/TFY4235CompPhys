@@ -24,6 +24,7 @@ def heatmap2d(arr , title, limits, Cmap = 'magma'):
     plt.tight_layout()
     plt.show()
 
+#The diffusion equation
 def n(x,t, r_i):
     N = 1001
     kBT = 26.0e-3*1.609e-19 #Joule
